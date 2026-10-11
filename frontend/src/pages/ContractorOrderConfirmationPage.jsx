@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 
+import { OrderRequirementsDisplay } from '../components/OrderRequirementsDisplay'
 import { ContractorLayout } from '../components/ContractorLayout'
 import { ordersApi } from '../services/api'
 
@@ -109,11 +110,12 @@ export function ContractorOrderConfirmationPage() {
             </div>
             {order.special_instructions && (
               <div>
-                <dt>Instructions</dt>
+                <dt>General instructions</dt>
                 <dd>{order.special_instructions}</dd>
               </div>
             )}
           </dl>
+          <OrderRequirementsDisplay order={order} />
 
           <div className="confirmation-actions">
             <Link to="/contractor" className="btn btn-primary">

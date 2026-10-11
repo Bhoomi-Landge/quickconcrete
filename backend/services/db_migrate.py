@@ -196,3 +196,38 @@ def migrate_plant_management_fields():
             )
         )
         db.session.commit()
+    migrate_order_concrete_requirements()
+
+
+def migrate_order_concrete_requirements():
+    """Additive columns for structured contractor order requirements."""
+    engine = db.engine
+    _add_column_if_missing(engine, "orders", "pump_required", "BOOLEAN")
+    _add_column_if_missing(engine, "orders", "pump_type", "VARCHAR(20)")
+    _add_column_if_missing(engine, "orders", "pump_boom_reach_m", "FLOAT")
+    _add_column_if_missing(engine, "orders", "pump_pipeline_length_m", "FLOAT")
+    _add_column_if_missing(engine, "orders", "pump_instructions", "TEXT")
+    _add_column_if_missing(engine, "orders", "placement_method", "VARCHAR(30)")
+    _add_column_if_missing(engine, "orders", "placement_method_other", "TEXT")
+    _add_column_if_missing(engine, "orders", "workability_test_type", "VARCHAR(20)")
+    _add_column_if_missing(engine, "orders", "target_slump_mm", "INTEGER")
+    _add_column_if_missing(engine, "orders", "minimum_slump_mm", "INTEGER")
+    _add_column_if_missing(engine, "orders", "maximum_slump_mm", "INTEGER")
+    _add_column_if_missing(engine, "orders", "special_concrete_type", "VARCHAR(30)")
+    _add_column_if_missing(engine, "orders", "special_concrete_notes", "TEXT")
+    _add_column_if_missing(engine, "orders", "requested_concrete_temp_c", "FLOAT")
+    _add_column_if_missing(engine, "orders", "contractor_modified_at", "DATETIME")
+    _add_column_if_missing(engine, "orders", "contractor_modified_fields", "TEXT")
+    migrate_plant_pricing_fields()
+
+
+def migrate_plant_pricing_fields():
+    """Optional plant-level pump, transport, tax and lead-time fields for quotations."""
+    engine = db.engine
+    _add_column_if_missing(engine, "plants", "pump_charge_inr", "FLOAT")
+    _add_column_if_missing(engine, "plants", "transport_charge_per_m3", "FLOAT")
+    _add_column_if_missing(engine, "plants", "other_charge_inr", "FLOAT")
+    _add_column_if_missing(engine, "plants", "other_charge_label", "VARCHAR(120)")
+    _add_column_if_missing(engine, "plants", "gst_rate_percent", "FLOAT")
+    _add_column_if_missing(engine, "plants", "estimated_lead_time_hours", "INTEGER")
+    _add_column_if_missing(engine, "plants", "quotation_valid_days", "INTEGER")

@@ -5,6 +5,13 @@ const EMPTY = {
   pincode: '',
   contact_phone: '',
   operating_hours: '',
+  pump_charge_inr: '',
+  transport_charge_per_m3: '',
+  other_charge_inr: '',
+  other_charge_label: '',
+  gst_rate_percent: '',
+  estimated_lead_time_hours: '',
+  quotation_valid_days: '',
 }
 
 export function emptyPlantForm() {
@@ -20,6 +27,16 @@ export function plantToForm(plant) {
     pincode: plant.pincode || '',
     contact_phone: plant.contact_phone || '',
     operating_hours: plant.operating_hours || '',
+    pump_charge_inr: plant.pump_charge_inr != null ? String(plant.pump_charge_inr) : '',
+    transport_charge_per_m3:
+      plant.transport_charge_per_m3 != null ? String(plant.transport_charge_per_m3) : '',
+    other_charge_inr: plant.other_charge_inr != null ? String(plant.other_charge_inr) : '',
+    other_charge_label: plant.other_charge_label || '',
+    gst_rate_percent: plant.gst_rate_percent != null ? String(plant.gst_rate_percent) : '',
+    estimated_lead_time_hours:
+      plant.estimated_lead_time_hours != null ? String(plant.estimated_lead_time_hours) : '',
+    quotation_valid_days:
+      plant.quotation_valid_days != null ? String(plant.quotation_valid_days) : '',
   }
 }
 
@@ -80,6 +97,88 @@ export function PlantForm({ form, onChange, onSubmit, submitting, error, submitL
           placeholder="Mon–Sat 6:00 AM – 8:00 PM"
         />
       </label>
+
+      <h3 className="form-section-title">Cost estimate charges (optional)</h3>
+      <p className="field-hint">
+        Published rates help contractors compare total estimated cost. Leave blank if not applicable.
+      </p>
+      <div className="form-row">
+        <label className="field">
+          <span>Pump charge (₹ flat per order)</span>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={form.pump_charge_inr}
+            onChange={(e) => update('pump_charge_inr', e.target.value)}
+            placeholder="e.g. 4500"
+          />
+        </label>
+        <label className="field">
+          <span>Transport (₹ per m³)</span>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={form.transport_charge_per_m3}
+            onChange={(e) => update('transport_charge_per_m3', e.target.value)}
+            placeholder="e.g. 120"
+          />
+        </label>
+      </div>
+      <div className="form-row">
+        <label className="field">
+          <span>Other charge (₹ flat)</span>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={form.other_charge_inr}
+            onChange={(e) => update('other_charge_inr', e.target.value)}
+          />
+        </label>
+        <label className="field">
+          <span>Other charge label</span>
+          <input
+            value={form.other_charge_label}
+            onChange={(e) => update('other_charge_label', e.target.value)}
+            placeholder="e.g. Night delivery surcharge"
+          />
+        </label>
+      </div>
+      <div className="form-row">
+        <label className="field">
+          <span>GST rate (%)</span>
+          <input
+            type="number"
+            min="0"
+            max="28"
+            step="0.1"
+            value={form.gst_rate_percent}
+            onChange={(e) => update('gst_rate_percent', e.target.value)}
+            placeholder="e.g. 18"
+          />
+        </label>
+        <label className="field">
+          <span>Est. lead time (hours)</span>
+          <input
+            type="number"
+            min="0"
+            value={form.estimated_lead_time_hours}
+            onChange={(e) => update('estimated_lead_time_hours', e.target.value)}
+          />
+        </label>
+        <label className="field">
+          <span>Quote validity (days)</span>
+          <input
+            type="number"
+            min="0"
+            value={form.quotation_valid_days}
+            onChange={(e) => update('quotation_valid_days', e.target.value)}
+          />
+        </label>
+      </div>
+
       <div className="form-actions">
         <button type="submit" className="btn btn-primary" disabled={submitting}>
           {submitting ? 'Saving…' : submitLabel}

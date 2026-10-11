@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 
+import { OrderRequirementsDisplay } from '../components/OrderRequirementsDisplay'
 import { ContractorLayout } from '../components/ContractorLayout'
 import { ordersApi } from '../services/api'
 
@@ -23,9 +24,18 @@ function formatDate(iso) {
 
 export function ContractorOrderDetailPage() {
   const { id } = useParams()
-  const [order, setOrder] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const location = useLocation()
+  const [order, setOrder] = useState(location.state?.order || null)
+  const [loading, setLoading] = useState(!location.state?.order)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState(location.state?.saved || false)
+
+  useEffect(() => {
+    if (location.state?.saved) {
+      setSuccess(true)
+      setOrder(location.state.order || order)
+    }
+  }, [location.state])
 
   useEffect(() => {
     let cancelled = false
@@ -45,8 +55,24 @@ export function ContractorOrderDetailPage() {
     }
   }, [id])
 
+  const editable = order?.editable
+
   return (
-    <ContractorLayout title={order?.order_number || 'Order details'} subtitle="Order summary and delivery info.">
+    <ContractorLayout
+      title={order?.order_number || 'Order details'}
+      subtitle="Order summary and delivery info."
+      actions={
+        editable ? (
+          <Link to={`/contractor/orders/${id}/edit`} className="btn btn-primary">
+            Edit order
+          </Link>
+        ) : order ? (
+          <span className="muted detail-hint">
+            Editing is only available while status is PLACED (before supplier acceptance).
+          </span>
+        ) : null
+      }
+    >
       <p className="breadcrumb">
         <Link to="/contractor" className="link">
           Dashboard
@@ -54,6 +80,7 @@ export function ContractorOrderDetailPage() {
         <span className="muted"> / Order</span>
       </p>
 
+      {success && <div className="alert alert-success">Order updated successfully.</div>}
       {error && <div className="alert alert-error">{error}</div>}
       {loading ? (
         <p className="muted">Loading order…</p>
@@ -64,6 +91,12 @@ export function ContractorOrderDetailPage() {
           <span className={`status-badge status-${order.status.toLowerCase()}`}>
             {order.status.replace(/_/g, ' ')}
           </span>
+          {order.contractor_modified_at && (
+            <p className="field-hint">
+              Updated by you on {formatDate(order.contractor_modified_at)} — supplier sees the
+              latest details and price.
+            </p>
+          )}
           <dl className="detail-list">
             <div>
               <dt>Site</dt>
@@ -109,11 +142,12 @@ export function ContractorOrderDetailPage() {
             </div>
             {order.special_instructions && (
               <div>
-                <dt>Instructions</dt>
+                <dt>General instructions</dt>
                 <dd>{order.special_instructions}</dd>
               </div>
             )}
           </dl>
+          <OrderRequirementsDisplay order={order} />
         </section>
       )}
     </ContractorLayout>

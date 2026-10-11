@@ -1,14 +1,21 @@
 const API_BASE = '/api'
 
 async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-    ...options,
-  })
+  let response
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+      ...options,
+    })
+  } catch {
+    throw new Error(
+      'Cannot reach the API. Start the backend: cd backend && ./venv/bin/python app.py (default port 5000).',
+    )
+  }
 
   const data = await response.json().catch(() => ({}))
 
@@ -66,6 +73,11 @@ export const ordersApi = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  compare: (payload) =>
+    request('/orders/compare', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   create: (payload) =>
     request('/orders', {
       method: 'POST',
@@ -73,6 +85,11 @@ export const ordersApi = {
     }),
   list: () => request('/orders'),
   get: (id) => request(`/orders/${id}`),
+  update: (id, payload) =>
+    request(`/orders/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
 }
 
 export const sitesApi = {

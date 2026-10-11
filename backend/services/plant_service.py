@@ -9,14 +9,92 @@ class PlantError(Exception):
         self.status_code = status_code
 
 
-def _clean_plant_payload(data):
+def _optional_money(value, field_label):
+    if value is None or value == "":
+        return None
+    try:
+        amount = float(value)
+    except (TypeError, ValueError):
+        raise PlantError(f"{field_label} must be a number.")
+    if amount < 0:
+        raise PlantError(f"{field_label} cannot be negative.")
+    return round(amount, 2)
+
+
+def _optional_int(value, field_label, max_value=10000):
+    if value is None or value == "":
+        return None
+    try:
+        num = int(value)
+    except (TypeError, ValueError):
+        raise PlantError(f"{field_label} must be a whole number.")
+    if num < 0 or num > max_value:
+        raise PlantError(f"{field_label} is out of range.")
+    return num
+
+
+def _optional_gst_percent(value):
+    if value is None or value == "":
+        return None
+    try:
+        rate = float(value)
+    except (TypeError, ValueError):
+        raise PlantError("GST rate must be a number.")
+    if rate < 0 or rate > 28:
+        raise PlantError("GST rate must be between 0 and 28%.")
+    return round(rate, 2)
+
+
+def _field_from_data(data, plant, key, parser):
+    if key in data:
+        return parser(data.get(key))
+    if plant is not None:
+        return getattr(plant, key, None)
+    return None
+
+
+def _clean_plant_payload(data, plant=None):
     return {
-        "plant_name": (data.get("plant_name") or "").strip(),
-        "address": (data.get("address") or "").strip(),
-        "city": (data.get("city") or "").strip(),
-        "pincode": (data.get("pincode") or "").strip(),
-        "contact_phone": (data.get("contact_phone") or "").strip() or None,
-        "operating_hours": (data.get("operating_hours") or "").strip() or None,
+        "plant_name": (data.get("plant_name") or (plant.plant_name if plant else "") or "").strip(),
+        "address": (data.get("address") or (plant.address if plant else "") or "").strip(),
+        "city": (data.get("city") or (plant.city if plant else "") or "").strip(),
+        "pincode": (data.get("pincode") or (plant.pincode if plant else "") or "").strip(),
+        "contact_phone": (data.get("contact_phone") or "").strip() or None
+        if "contact_phone" in data
+        else (plant.contact_phone if plant else None),
+        "operating_hours": (data.get("operating_hours") or "").strip() or None
+        if "operating_hours" in data
+        else (plant.operating_hours if plant else None),
+        "pump_charge_inr": _field_from_data(
+            data, plant, "pump_charge_inr", lambda v: _optional_money(v, "Pump charge")
+        ),
+        "transport_charge_per_m3": _field_from_data(
+            data,
+            plant,
+            "transport_charge_per_m3",
+            lambda v: _optional_money(v, "Transport charge per m³"),
+        ),
+        "other_charge_inr": _field_from_data(
+            data, plant, "other_charge_inr", lambda v: _optional_money(v, "Other charge")
+        ),
+        "other_charge_label": (data.get("other_charge_label") or "").strip() or None
+        if "other_charge_label" in data
+        else (plant.other_charge_label if plant else None),
+        "gst_rate_percent": _field_from_data(
+            data, plant, "gst_rate_percent", _optional_gst_percent
+        ),
+        "estimated_lead_time_hours": _field_from_data(
+            data,
+            plant,
+            "estimated_lead_time_hours",
+            lambda v: _optional_int(v, "Lead time (hours)", max_value=720),
+        ),
+        "quotation_valid_days": _field_from_data(
+            data,
+            plant,
+            "quotation_valid_days",
+            lambda v: _optional_int(v, "Quotation validity (days)", max_value=90),
+        ),
     }
 
 
@@ -48,9 +126,26 @@ def get_plant_for_supplier(supplier_id, plant_id):
     return plant
 
 
+def _apply_plant_payload(plant, payload):
+    plant.plant_name = payload["plant_name"]
+    plant.address = payload["address"]
+    plant.city = payload["city"]
+    plant.pincode = payload["pincode"]
+    plant.contact_phone = payload["contact_phone"]
+    plant.operating_hours = payload["operating_hours"]
+    plant.pump_charge_inr = payload["pump_charge_inr"]
+    plant.transport_charge_per_m3 = payload["transport_charge_per_m3"]
+    plant.other_charge_inr = payload["other_charge_inr"]
+    plant.other_charge_label = payload["other_charge_label"]
+    plant.gst_rate_percent = payload["gst_rate_percent"]
+    plant.estimated_lead_time_hours = payload["estimated_lead_time_hours"]
+    plant.quotation_valid_days = payload["quotation_valid_days"]
+
+
 def create_plant_for_supplier(supplier_id, data):
     payload = validate_plant_fields(_clean_plant_payload(data))
-    plant = Plant(supplier_id=supplier_id, is_active=True, **payload)
+    plant = Plant(supplier_id=supplier_id, is_active=True)
+    _apply_plant_payload(plant, payload)
     db.session.add(plant)
     db.session.commit()
     return plant
@@ -58,13 +153,8 @@ def create_plant_for_supplier(supplier_id, data):
 
 def update_plant_for_supplier(supplier_id, plant_id, data):
     plant = get_plant_for_supplier(supplier_id, plant_id)
-    payload = validate_plant_fields(_clean_plant_payload(data))
-    plant.plant_name = payload["plant_name"]
-    plant.address = payload["address"]
-    plant.city = payload["city"]
-    plant.pincode = payload["pincode"]
-    plant.contact_phone = payload["contact_phone"]
-    plant.operating_hours = payload["operating_hours"]
+    payload = validate_plant_fields(_clean_plant_payload(data, plant=plant))
+    _apply_plant_payload(plant, payload)
     if "is_active" in data:
         plant.is_active = bool(data["is_active"])
     db.session.commit()
@@ -271,6 +361,13 @@ def plant_to_dict(plant, include_summary=False):
         "pincode": plant.pincode,
         "contact_phone": plant.contact_phone,
         "operating_hours": plant.operating_hours,
+        "pump_charge_inr": plant.pump_charge_inr,
+        "transport_charge_per_m3": plant.transport_charge_per_m3,
+        "other_charge_inr": plant.other_charge_inr,
+        "other_charge_label": plant.other_charge_label,
+        "gst_rate_percent": plant.gst_rate_percent,
+        "estimated_lead_time_hours": plant.estimated_lead_time_hours,
+        "quotation_valid_days": plant.quotation_valid_days,
         "is_active": plant.is_active,
         "created_at": plant.created_at.isoformat() if plant.created_at else None,
     }

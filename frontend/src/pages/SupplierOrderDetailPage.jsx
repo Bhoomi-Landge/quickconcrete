@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
+import { OrderRequirementsDisplay } from '../components/OrderRequirementsDisplay'
 import { SupplierLayout } from '../components/SupplierLayout'
 import { supplierApi } from '../services/api'
 import { NEXT_STATUS_LABELS, formatInr, formatStatus, statusClass } from '../utils/orderHelpers'
@@ -90,6 +91,12 @@ export function SupplierOrderDetailPage() {
       ) : (
         <section className="card detail-card">
           <span className={statusClass(order.status)}>{formatStatus(order.status)}</span>
+          {order.contractor_modified_at && order.status === 'PLACED' && (
+            <p className="alert alert-info">
+              Contractor updated this order on {order.contractor_modified_at.slice(0, 10)}. Review
+              the latest quantity, delivery window, requirements and total before accepting.
+            </p>
+          )}
 
           <dl className="detail-list">
             <div>
@@ -132,11 +139,12 @@ export function SupplierOrderDetailPage() {
             </div>
             {order.special_instructions && (
               <div>
-                <dt>Instructions</dt>
+                <dt>General instructions</dt>
                 <dd>{order.special_instructions}</dd>
               </div>
             )}
           </dl>
+          <OrderRequirementsDisplay order={order} />
 
           {order.status === 'DELIVERED' && (
             <p className="muted">This order is complete and included in revenue summary.</p>

@@ -38,6 +38,7 @@ function App() {
             <Route path="/contractor/sites/:id/edit" element={<ContractorSiteFormPage mode="edit" />} />
             <Route path="/contractor/marketplace" element={<ContractorMarketplacePage />} />
             <Route path="/contractor/orders/new" element={<ContractorOrderPage />} />
+            <Route path="/contractor/orders/:id/edit" element={<ContractorOrderPage mode="edit" />} />
             <Route path="/contractor/orders/:id/confirmation" element={<ContractorOrderConfirmationPage />} />
             <Route path="/contractor/orders/:id" element={<ContractorOrderDetailPage />} />
           </Route>

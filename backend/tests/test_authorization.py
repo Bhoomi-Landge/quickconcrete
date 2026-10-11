@@ -1,34 +1,9 @@
 import os
-import tempfile
 import unittest
-from datetime import date, timedelta
 
-from models import ConcreteProduct, Order, Plant, Site, Supplier, Truck, User, db
+from models import ConcreteProduct, Order, Plant, Supplier, Truck, User, db
 from services.auth_service import hash_password
-
-
-def make_app():
-    fd, path = tempfile.mkstemp(suffix=".db")
-    os.close(fd)
-    os.environ["DATABASE_URL"] = f"sqlite:///{path}"
-    from app import create_app
-
-    app = create_app()
-    return app, path
-
-
-def login(client, email, password):
-    return client.post("/api/auth/login", json={"email": email, "password": password})
-
-
-def register_contractor(client, tag):
-    email = f"{tag}_contractor@test.local"
-    r = client.post(
-        "/api/auth/register",
-        json={"name": f"C {tag}", "email": email, "password": "secret1", "role": "CONTRACTOR"},
-    )
-    assert r.status_code == 201, r.json
-    return email, r.json["user"]["id"]
+from test_helpers import base_order_json, demo_plant_id, login, make_app, register_contractor
 
 
 def register_supplier(client, tag, company):
@@ -70,6 +45,7 @@ class AuthorizationTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app, cls.db_path = make_app()
         cls.client = cls.app.test_client()
+        cls.demo_plant_id = demo_plant_id(cls.app)
 
         with cls.app.app_context():
             admin = User(
@@ -117,16 +93,9 @@ class AuthorizationTests(unittest.TestCase):
             json={"site_name": "S", "address": "A", "city": "Mumbai", "pincode": "400001"},
         )
         site_id = r.json["site"]["id"]
-        tomorrow = (date.today() + timedelta(days=1)).isoformat()
         r = self.client.post(
             "/api/orders",
-            json={
-                "site_id": site_id,
-                "concrete_grade": "M25",
-                "quantity_m3": 2,
-                "delivery_date": tomorrow,
-                "delivery_time": "10:00",
-            },
+            json=base_order_json(site_id, self.demo_plant_id),
         )
         self.assertEqual(r.status_code, 201, r.json)
         order_id = r.json["order"]["id"]
@@ -186,16 +155,9 @@ class AuthorizationTests(unittest.TestCase):
             json={"site_name": "S", "address": "A", "city": "Mumbai", "pincode": "400001"},
         )
         site_id = r.json["site"]["id"]
-        tomorrow = (date.today() + timedelta(days=1)).isoformat()
         self.client.post(
             "/api/orders",
-            json={
-                "site_id": site_id,
-                "concrete_grade": "M25",
-                "quantity_m3": 1,
-                "delivery_date": tomorrow,
-                "delivery_time": "10:00",
-            },
+            json=base_order_json(site_id, self.demo_plant_id, quantity_m3=1),
         )
         with self.app.app_context():
             order = Order.query.order_by(Order.id.desc()).first()
