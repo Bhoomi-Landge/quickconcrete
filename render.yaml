@@ -1,4 +1,4 @@
-# Free Render web service — first open after idle may take ~30–60s to wake.
+# Free web + free Postgres (1 GB). Postgres free DB expires after 30 days — renew or upgrade for production.
 services:
   - type: web
     name: quickconcrete
@@ -8,9 +8,19 @@ services:
     envVars:
       - key: SERVE_FRONTEND
         value: "1"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: quickconcrete-db
+          property: connectionString
       - key: SECRET_KEY
         generateValue: true
       - key: ADMIN_EMAIL
         value: admin@quickconcrete.local
       - key: ADMIN_PASSWORD
         value: admin123
+
+databases:
+  - name: quickconcrete-db
+    plan: free
+    databaseName: quickconcrete
+    user: quickconcrete

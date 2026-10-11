@@ -26,6 +26,9 @@ def _column_exists(engine, table_name, column_name):
 
 def _add_column_if_missing(engine, table_name, column_name, column_type):
     if not _column_exists(engine, table_name, column_name):
+        dialect = engine.dialect.name
+        if dialect == "postgresql" and column_type.upper() == "FLOAT":
+            column_type = "DOUBLE PRECISION"
         db.session.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"))
         db.session.commit()
 

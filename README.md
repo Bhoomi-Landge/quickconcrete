@@ -15,6 +15,26 @@ MVP for on-demand Ready-Mix Concrete (RMC) delivery — contractors browse suppl
 
 Default admin after deploy: `admin@quickconcrete.local` / `admin123` (change via env vars).
 
+## Persistent database (Render Postgres — free for pilots)
+
+`render.yaml` defines a **free Postgres** (`quickconcrete-db`) wired to `DATABASE_URL`. User accounts, plants, and orders **survive redeploys** (unlike SQLite in the container).
+
+| | |
+|---|---|
+| **Good for** | Few testers, pre-launch demos |
+| **Limit** | Free Postgres **expires after 30 days** (export or upgrade before then) |
+| **Local dev** | Still uses SQLite unless you set `DATABASE_URL` |
+
+### If you already deployed without Postgres
+
+1. [Render Dashboard](https://dashboard.render.com) → **Blueprints** → your blueprint → **Manual sync** (or add DB manually):
+   - **New → PostgreSQL** → plan **Free** → name `quickconcrete-db`
+2. Open web service **quickconcrete** → **Environment** → add:
+   - `DATABASE_URL` = **Internal Database URL** from the Postgres instance (copy from Postgres → Connect).
+3. **Manual Deploy** the web service.
+
+After deploy, **re-register** test users once (old SQLite data is not migrated automatically).
+
 ## Stack
 
 - **Backend:** Flask, Flask-SQLAlchemy, Flask-CORS, SQLite
