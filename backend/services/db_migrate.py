@@ -24,12 +24,24 @@ def _column_exists(engine, table_name, column_name):
     return column_name in columns
 
 
+def _sql_column_type(dialect, column_type):
+    """Map portable migration types to dialect-specific SQL (SQLite vs PostgreSQL)."""
+    upper = column_type.upper()
+    if dialect == "postgresql":
+        if upper == "FLOAT":
+            return "DOUBLE PRECISION"
+        if upper == "DATETIME":
+            return "TIMESTAMP"
+    return column_type
+
+
 def _add_column_if_missing(engine, table_name, column_name, column_type):
     if not _column_exists(engine, table_name, column_name):
         dialect = engine.dialect.name
-        if dialect == "postgresql" and column_type.upper() == "FLOAT":
-            column_type = "DOUBLE PRECISION"
-        db.session.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"))
+        sql_type = _sql_column_type(dialect, column_type)
+        db.session.execute(
+            text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {sql_type}")
+        )
         db.session.commit()
 
 
