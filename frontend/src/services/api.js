@@ -94,6 +94,10 @@ export const sitesApi = {
     }),
 }
 
+export const adminApi = {
+  overview: () => request('/admin/overview'),
+}
+
 export const authApi = {
   me: () => request('/auth/me'),
   login: (email, password) =>
